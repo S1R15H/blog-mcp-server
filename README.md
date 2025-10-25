@@ -1,4 +1,4 @@
-# Blog RSS MCP Server
+# 🌟Blog RSS MCP Server
 
 A small FastMCP-based service exposing two tools for working with a blog RSS feed:
 
@@ -95,94 +95,108 @@ docker run -d \
 	blog-rss-mcp:latest
 ```
 
+## Docker Desktop Setup With Claude Client
+Prerequisites: Docker Desktop installed with MCP Toolkit enabled. Claude desktop installed.
+
+1) **Build a Docker Image**: You first build a local Docker image named blog-mcp-server using the provided project files (Dockerfile, Python server, etc.).
+```bash
+docker build -t blog-rss-mcp:latest .
+```
+
+2) **Define the Tool**: You create a `~/.docker/mcp/catalogs/custom.yaml` file that acts as a "catalog." This file defines the new "blog" tool, lists all its functions (like list_blog_posts, get_blog_posts, and others), and tells the system to use the Docker image you just built.
+```json
+yamlversion: 2
+name: blog-mcp-server
+displayName: Blog RSS MCP Server
+registry:
+  blog-rss-mcp:
+    description: "Local MCP server exposing blog RSS tools (list_blog_posts, get_blog_post, get_recent_posts, get_blog_info, search_full_text)."
+    title: "Blog RSS MCP Server"
+    type: server
+    dateAdded: "2025-10-23T00:00:00Z"
+    image: blog-mcp-server:latest
+    ref: ""
+    readme: "README.md"
+    toolsUrl: ""
+    source: ""
+    upstream: ""
+    icon: ""
+    tools:
+      - name: list_blog_posts
+      - name: get_blog_post
+      - name: get_recent_posts
+      - name: get_blog_info
+      - name: search_full_text
+    metadata:
+      category: productivity
+      tags:
+        - blog
+        - rss
+        - mcp
+        - search
+      owner: local
+    env:
+      - name: RSS_FEED_URL
+        description: "URL to the blog RSS feed (required)."
+        required: true
+      - name: MCP_TRANSPORT
+        description: "Transport used by FastMCP. Use 'stdio' for local client-managed lifecycle."
+        default: "stdio"
+      - name: MCP_MOUNT_PATH
+        description: "Optional mount path for transports like SSE."
+        default: ""
+
+```
+
+3) **Register the Tool**: You edit the `~/.docker/mcp/registry.yaml` file to officially register the new blog tool with the MCP (Model-Component-Processor) system.
+```yaml
+registry:
+  blog-rss-mcp:
+    ref: ""
+```
+
+4) **Configure Claude Desktop**: You edit the main claude_desktop_config.json file to tell the Claude application to load your new custom.yaml catalog file. 
+
+macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
+Windows: %APPDATA%\Claude\claude_desktop_config.json
+Linux: ~/.config/Claude/claude_desktop_config.json
+
+You can also find an _Edit Config_ option in the Settings->Developers window.
+This step requires adding the file path to the command arguments and ensuring your home directory path is correct.
+```json
+{
+    "mcpServers": {
+      "mcp-toolkit-gateway": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-v", "/var/run/docker.sock:/var/run/docker.sock",
+          "-v", "[YOUR_HOME]/.docker/mcp:/mcp",
+          "docker/mcp-gateway",
+          "--catalog=/mcp/catalogs/docker-mcp.yaml",
+          "--catalog=/mcp/catalogs/custom.yaml",
+          "--config=/mcp/config.yaml",
+          "--registry=/mcp/registry.yaml",
+          "--tools-config=/mcp/tools.yaml",
+          "--transport=stdio"
+        ]
+      }
+    }
+  }
+```
+
+5) **Restart and Test**: After restarting the Claude Desktop app, the new blog functions will be available. You can test them by asking Claude to "get recent blogs" or "list all blogs"
+
+## Output Samples
+
+!["Screenshot of claude desktop using the mcp server"](./images/claude-prompt.png)
+
+
 ## Notes & troubleshooting
 
+- You can add your rss link to RSS_FEED_URL in the dockerfile to make it the default.
 - Logs go to stderr; stdio transport messages go to stdout (safe for MCP clients).
 - If HTTPS feed fetches fail in a minimal base image, install system CA certificates in your container.
 - If `mcp.run()` signature changes between versions, inspect `FastMCP.run` in your installed package and adjust the call accordingly.
-
-Example:
-
-```bash
-export RSS_FEED_URL="https://www.sirishgurung.com/rss.xml"
-export MCP_TRANSPORT=stdio
-
-```
-
-## Running locally
-
-Start the server directly with Python (development):
-
-```bash
-python main_server.py
-```
-
-If `MCP_TRANSPORT=stdio`, the process runs attached to STDIN/STDOUT so a supervising client can manage lifecycle and communicate over stdio.
-
-## Docker
-
-Build the image locally:
-
-```bash
-docker buildx build -f Dockerfile -t blog-rss-mcp:latest --load .
-```
-
-Run attached to your terminal (stdio transport):
-
-```bash
-docker run --rm -i \
-	-e RSS_FEED_URL="https://www.sirishgurung.com/rss.xml" \
-	-e MCP_TRANSPORT=stdio \
-	--name blog-rss-mcp blog-rss-mcp:latest
-```
-
-Or run detached with an HTTP/streamable transport (adjust ports as needed):
-
-```bash
-docker run -d \
-	-e RSS_FEED_URL="https://www.sirishgurung.com/rss.xml" \
-	-e MCP_TRANSPORT=streamable-http \
-	-e MCP_MOUNT_PATH="/mcp" \
-	-p 5000:5000 \
-	--name blog-rss-mcp blog-rss-mcp:latest
-```
-
-## Search
-
-- `search_full_text(query)` performs a simple case-insensitive substring search on-demand. It fetches each post’s content live and extracts plain text, so results always reflect the current site content.
-
-## Custom catalog and client integration
-
-- The repo includes `custom_catalog_for_blog_mcp.txt` (example YAML you can copy into a client catalog). Use `MCP_TRANSPORT=stdio` when you want the client to spawn the container and communicate over stdio.
-
-## Troubleshooting
-
-- If you see import errors for `feedparser` or `beautifulsoup4`, run `pip install -r requirements.txt` in the same environment.
-- If posts are missing from `list_blog_posts()`, verify the feed provides `published` or `pubDate`; the server is defensive but you can inspect the raw parsed feed:
-
-```python
-import feedparser
-f = feedparser.parse("https://your-blog.example.com/feed.xml")
-print(f.feed)
-print(len(f.entries), f.entries[0].keys())
-```
-
-- If `mcp.run()` fails due to signature mismatch, inspect `mcp.server.fastmcp.FastMCP.run` in your installed package and adjust the call in `main_server.py`.
-
-## Development & tests
-
-- Add pytest tests that mock `feedparser.parse` to exercise `list_blog_posts`, `get_blog_post`, and `search_full_text`.
-- Consider adding a GitHub Actions workflow to run tests on push.
-
-## Security & production notes
-
-- Do not expose the server publicly without authentication or a reverse proxy with TLS.
-- When building/persisting indexes, secure the storage and limit who can trigger a rebuild.
-
-## Next steps I can help with
-
-- Wire `_build_fulltext_index()` to run at startup when `BUILD_FULLTEXT_INDEX` is enabled (optionally persist to disk).
-- Add unit tests and a CI workflow.
-- Add a `HEALTHCHECK` to the Dockerfile and/or a small HTTP health endpoint.
-
-Tell me which of those you'd like and I'll implement it.

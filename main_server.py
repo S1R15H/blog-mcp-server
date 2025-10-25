@@ -22,10 +22,6 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP app (visible name to clients)
 mcp = FastMCP("Blog RSS Server")
 
-# (Removed) In-memory full-text index and related startup logic per request.
-
-
-
 @mcp.tool()
 def list_blog_posts() -> List[Dict[str, Any]]:
     """
@@ -109,19 +105,6 @@ def _entry_to_post_dict(entry) -> Dict[str, Any]:
         'slug': slug,
         'pubDate': pub,
     }
-
-def _get_entry_date(entry):
-    """Return a best-effort date string for a feed entry, trying common names used by feedparser and raw RSS.
-    Prefer 'published' (feedparser), fall back to 'pubDate' or dict keys.
-    """
-    if hasattr(entry, 'published') and getattr(entry, 'published'):
-        return getattr(entry, 'published')
-    if hasattr(entry, 'pubDate') and getattr(entry, 'pubDate'):
-        return getattr(entry, 'pubDate')
-    if isinstance(entry, dict):
-        return entry.get('published') or entry.get('pubDate')
-    return None
-
 
 @mcp.tool()
 def get_recent_posts(count: int = 5) -> List[Dict[str, str]]:

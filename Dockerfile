@@ -21,7 +21,7 @@ COPY README.md ./
 EXPOSE 5000
 
 # Default RSS feed placeholder. It's recommended to set RSS_FEED_URL at runtime instead
-ENV RSS_FEED_URL="https://www.sirishgurung.com/rss.xml"
+ENV RSS_FEED_URL="https://YOUR_BLOG_URL_HERE.com/feed.xml"
 
 # Run the main server
 CMD ["python", "main_server.py"]
