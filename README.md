@@ -1,9 +1,5 @@
 # 🌟Blog RSS MCP Server
 
-A small FastMCP-based service exposing two tools for working with a blog RSS feed:
-
-# Blog RSS MCP Server
-
 A minimal Model Context Protocol (MCP) server that exposes tools for working with a blog’s RSS/Atom feed. It lists posts, fetches post content, returns recent posts, basic blog info, and can search post content on-demand.
 
 ## What’s in here
