@@ -1,0 +1,6 @@
+# Requirements for Blog RSS MCP server
+# Adjust the 'mcp' package name/version if this project uses a local or private package.
+feedparser==6.0.12
+beautifulsoup4>=4.12.2
+requests>=2.31.0
+mcp[cli]>=1.9.4
