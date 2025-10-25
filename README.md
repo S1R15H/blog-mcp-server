@@ -104,7 +104,7 @@ docker build -t blog-rss-mcp:latest .
 ```
 
 2) **Define the Tool**: You create a `~/.docker/mcp/catalogs/custom.yaml` file that acts as a "catalog." This file defines the new "blog" tool, lists all its functions (like list_blog_posts, get_blog_posts, and others), and tells the system to use the Docker image you just built.
-```json
+```yaml
 yamlversion: 2
 name: blog-mcp-server
 displayName: Blog RSS MCP Server
@@ -156,10 +156,9 @@ registry:
 ```
 
 4) **Configure Claude Desktop**: You edit the main claude_desktop_config.json file to tell the Claude application to load your new custom.yaml catalog file. 
-
-macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
-Windows: %APPDATA%\Claude\claude_desktop_config.json
-Linux: ~/.config/Claude/claude_desktop_config.json
+	- macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
+	- Windows: %APPDATA%\Claude\claude_desktop_config.json
+	- Linux: ~/.config/Claude/claude_desktop_config.json
 
 You can also find an _Edit Config_ option in the Settings->Developers window.
 This step requires adding the file path to the command arguments and ensuring your home directory path is correct.
